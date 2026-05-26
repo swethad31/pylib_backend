@@ -49,3 +49,48 @@ def get_book(book_id: int, db: Session = Depends(get_db)):
         )
 
     return book
+
+
+# UPDATE BOOK
+@router.put("/{book_id}", response_model=BookResponse)
+def update_book(
+    book_id: int,
+    updated_book: BookCreate,
+    db: Session = Depends(get_db)
+):
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+
+    if not book:
+        raise HTTPException(
+            status_code=404,
+            detail="Book not found"
+        )
+
+    book.title = updated_book.title
+    book.author = updated_book.author
+
+    db.commit()
+    db.refresh(book)
+
+    return book
+
+# DELETE BOOK
+@router.delete("/{book_id}")
+def delete_book(
+    book_id: int,
+    db: Session = Depends(get_db)
+):
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+
+    if not book:
+        raise HTTPException(
+            status_code=404,
+            detail="Book not found"
+        )
+
+    db.delete(book)
+    db.commit()
+
+    return {"message": "Book deleted successfully"}
