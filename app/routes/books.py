@@ -5,30 +5,16 @@ from app.database import get_db
 from app.models import Book
 from app.schemas import BookCreate, BookResponse
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/books",
+    tags=["Books"]
+)
 
 
-@router.get("/books", response_model=list[BookResponse])
-def get_books(db: Session = Depends(get_db)):
-    books = db.query(Book).all()
-    return books
+# CREATE BOOK
+@router.post("/", response_model=BookResponse)
+def create_book(book: BookCreate, db: Session = Depends(get_db)):
 
-
-@router.get("/books/{book_id}", response_model=BookResponse)
-def get_book(book_id: int, db: Session = Depends(get_db)):
-    book = db.query(Book).filter(Book.id == book_id).first()
-
-    if not book:
-        raise HTTPException(
-            status_code=404,
-            detail="Book not found"
-        )
-
-    return book
-
-
-@router.post("/books", response_model=BookResponse)
-def add_book(book: BookCreate, db: Session = Depends(get_db)):
     new_book = Book(
         title=book.title,
         author=book.author
@@ -41,12 +27,19 @@ def add_book(book: BookCreate, db: Session = Depends(get_db)):
     return new_book
 
 
-@router.put("/books/{book_id}", response_model=BookResponse)
-def update_book(
-    book_id: int,
-    updated_book: BookCreate,
-    db: Session = Depends(get_db)
-):
+# GET ALL BOOKS
+@router.get("/", response_model=list[BookResponse])
+def get_books(db: Session = Depends(get_db)):
+
+    books = db.query(Book).all()
+
+    return books
+
+
+# GET SINGLE BOOK
+@router.get("/{book_id}", response_model=BookResponse)
+def get_book(book_id: int, db: Session = Depends(get_db)):
+
     book = db.query(Book).filter(Book.id == book_id).first()
 
     if not book:
@@ -54,27 +47,5 @@ def update_book(
             status_code=404,
             detail="Book not found"
         )
-
-    book.title = updated_book.title
-    book.author = updated_book.author
-
-    db.commit()
-    db.refresh(book)
 
     return book
-
-
-@router.delete("/books/{book_id}")
-def delete_book(book_id: int, db: Session = Depends(get_db)):
-    book = db.query(Book).filter(Book.id == book_id).first()
-
-    if not book:
-        raise HTTPException(
-            status_code=404,
-            detail="Book not found"
-        )
-
-    db.delete(book)
-    db.commit()
-
-    return {"message": "Book deleted successfully"}
